@@ -3,46 +3,59 @@ import daemon,os,sys
 from signal import SIGTERM
 import time
 import mod_vm
+import urlparse
 
 ########################################################################
 class RESTHandler(BaseHTTPRequestHandler):
     #----------------------------------------------------------------------
     def do_GET(self):
         """"""
+        #get path and params
+        result=urlparse.urlparse(self.path)
+        path=result.path
+        params=urlparse.parse_qs(result.query,True)
+        
         #get vm templates
-        if self.path=="/templates":
+        if path=="/templates":
             self.send_response(200)
             self.end_headers()
-            ret_format=str(self.headers.getheader("format"))
-            answer=""
-            if ret_format!=None:
-                answer=answer+ret_format
-            answer=self.path+" "+answer
-            self.wfile.write("<html>"+answer+"</html>")
-            pass
+            answer=mod_vm.getConfig().replace('<',"&lt;").replace('>',"&gt;")
+            self.wfile.write("<html><pre>"+answer+"</pre></html>")
+            
         #get vm instance info
         elif self.path=="/instances":
             self.send_response(200)
             self.end_headers()
             self.wfile.write("vm instance info:")
-        #answer="<html><pre>"+mod_vm.getConfig()+"</pre></html>"
-        else:
-            self.send_response(404)
-            self.end_headers()
-            answer=""
             
-            self.wfile.write(self.path+str(self.headers.getparam("format")))
+        else:
+            self.send_error(404,"URL Error!")
+            self.end_headers()
     #----------------------------------------------------------------------
     def do_POST(self):
         """"""
+        #get path and params
+        result=urlparse.urlparse(self.path)
+        path=result.path
+        #new instance
+        if path=="/instance/new":
+            self.send_response(200)
+            self.end_headers()
+            length=int(self.headers.getheader('content-length'))
+            request_body=str(self.rfile.read(length))
+            
+            self.wfile.write()
+            
+        elif path=="/instance/start":
+            pass
+        elif path=="/instance/stop":
+            pass
     #----------------------------------------------------------------------
     def do_PUT(self):
         """"""
     #----------------------------------------------------------------------
     def do_DELETE(self):
         """"""
-        
-    
         
 #----------------------------------------------------------------------
 def serverInit():

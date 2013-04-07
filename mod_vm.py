@@ -20,7 +20,7 @@ ss=""
 for line in lines:
     ss=ss+line
 
-config["Windows2k8"]=ss.replace('<',"&lt;").replace('>',"&gt;")
+config["Windows2k8"]=ss
 
 #----------------------------------------------------------------------
 #create vm on a host,with given xml-based configuration.
