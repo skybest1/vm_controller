@@ -23,11 +23,23 @@ class RESTHandler(BaseHTTPRequestHandler):
             self.wfile.write("<html><pre>"+answer+"</pre></html>")
             
         #get vm instance info
-        elif self.path=="/instances":
+        elif path=="/instances":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write("vm instance info:")
-            
+            if params.has_key("UUID") and params.has_key("format"):
+                req_UUID=params["UUID"][0]
+                req_format=params["format"][0]
+                #query vminfo
+                query_result=mod_vm.queryVM(req_UUID,req_format)
+                if query_result!=None:
+                    if req_format=="json":
+                        self.wfile.write(query_result)
+                    else:
+                        self.wfile.write("<html><pre>%s</pre></html>"%(query_result))
+                else:
+                    self.wfile.write("Query Fail!")
+            else:
+                self.wfile.write("Bad Request")
         else:
             self.send_error(404,"URL Error!")
             self.end_headers()
@@ -37,14 +49,24 @@ class RESTHandler(BaseHTTPRequestHandler):
         #get path and params
         result=urlparse.urlparse(self.path)
         path=result.path
-        #new instance
+        
+        #create new instance
         if path=="/instance/new":
             self.send_response(200)
             self.end_headers()
+            #read and parse POST request body
             length=int(self.headers.getheader('content-length'))
             request_body=str(self.rfile.read(length))
-            
-            self.wfile.write()
+            request_params=urlparse.parse_qs(request_body)
+            #param:name template
+            if request_params.has_key("name") and request_params.has_key("template"):
+                ret_uuid=mod_vm.createVM(request_params["name"][0])
+                if ret_uuid!=None:
+                    self.wfile.write("VM Created...\nVM UUID:%s" %ret_uuid)
+                else:
+                    self.wfile.write("Cannot create VM...")
+            else:
+                self.wfile.write("Request Parameters Error!")
             
         elif path=="/instance/start":
             pass

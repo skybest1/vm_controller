@@ -5,9 +5,9 @@ if __name__=="__main__":
     param={}
     #vm instance id
     param["name"]="virtual machine name"
-    param["length"]="123"
+    param["template"]="123"
     body=urllib.urlencode(param)
-    print body
+    #print body
     #
     httpconn=httplib.HTTPConnection("127.0.0.1:8001")
     url="/instance/new"
