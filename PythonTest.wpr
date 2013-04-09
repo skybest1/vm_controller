@@ -14,5 +14,6 @@ proj.file-list = [loc('../HelloWorld/GetTest.py'),
                   loc('net.py'),
                   loc('osfork.py'),
                   loc('test.py'),
-                  loc('test_post.py')]
+                  loc('test_post.py'),
+                  loc('test_suspend.py')]
 proj.file-type = 'shared'

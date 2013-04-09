@@ -4,6 +4,7 @@ from signal import SIGTERM
 import time
 import mod_vm
 import urlparse
+import json
 
 ########################################################################
 class RESTHandler(BaseHTTPRequestHandler):
@@ -21,6 +22,12 @@ class RESTHandler(BaseHTTPRequestHandler):
             self.end_headers()
             answer=mod_vm.getConfig().replace('<',"&lt;").replace('>',"&gt;")
             self.wfile.write("<html><pre>"+answer+"</pre></html>")
+        #get system running info
+        elif path=="/info":
+            self.send_response(200)
+            self.end_headers()
+            answer=mod_vm.queryModInfo()
+            self.wfile.write("<html><pre>%s</pre></html>" %(answer))
             
         #get vm instance info
         elif path=="/instances":
@@ -46,32 +53,74 @@ class RESTHandler(BaseHTTPRequestHandler):
     #----------------------------------------------------------------------
     def do_POST(self):
         """"""
-        #get path and params
+        #get path and request body
         result=urlparse.urlparse(self.path)
         path=result.path
+        length=int(self.headers.getheader('content-length'))
+        request_body=str(self.rfile.read(length))
+        request_params=urlparse.parse_qs(request_body)        
         
         #create new instance
         if path=="/instance/new":
             self.send_response(200)
             self.end_headers()
-            #read and parse POST request body
-            length=int(self.headers.getheader('content-length'))
-            request_body=str(self.rfile.read(length))
-            request_params=urlparse.parse_qs(request_body)
             #param:name template
             if request_params.has_key("name") and request_params.has_key("template"):
                 ret_uuid=mod_vm.createVM(request_params["name"][0])
                 if ret_uuid!=None:
-                    self.wfile.write("VM Created...\nVM UUID:%s" %ret_uuid)
+                    ret_answer={"code":"1","UUID":ret_uuid}
+                    self.wfile.write(json.dumps(ret_answer))
                 else:
-                    self.wfile.write("Cannot create VM...")
+                    ret_answer={"code":"0"}
+                    self.wfile.write(json.dumps(ret_answer))
             else:
                 self.wfile.write("Request Parameters Error!")
-            
-        elif path=="/instance/start":
-            pass
-        elif path=="/instance/stop":
-            pass
+        #suspend a vm
+        elif path=="/instance/pause":
+            self.send_response(200)
+            self.end_headers()
+            #param :uuid
+            if request_params.has_key("UUID"):
+                req_uuid=request_params["UUID"][0]
+                ret=mod_vm.suspendVM(req_uuid)
+                if ret==1:
+                    ret_answer={"code":"1"}
+                    self.wfile.write(json.dumps(ret_answer))
+                else:
+                    ret_answer={"code":"0"}
+                    self.wfile.write(json.dumps(ret_answer))
+        #resume a suspended vm
+        elif path=="/instance/resume":
+            self.send_response(200)
+            self.end_headers()
+            #param :uuid
+            if request_params.has_key("UUID"):
+                req_uuid=request_params["UUID"][0]
+                ret=mod_vm.resumeVM(req_uuid)
+                if ret==1:
+                    ret_answer={"code":"1"}
+                    self.wfile.write(json.dumps(ret_answer))
+                else:
+                    ret_answer={"code":"0"}
+                    self.wfile.write(json.dumps(ret_answer))
+        #shut down a vm
+        elif path=="/instance/shutdown":
+            self.send_response(200)
+            self.end_headers()
+            #param :uuid
+            if request_params.has_key("UUID"):
+                req_uuid=request_params["UUID"][0]
+                ret=mod_vm.shutdownVM(req_uuid)
+                if ret==1:
+                    ret_answer={"code":"1"}
+                    self.wfile.write(json.dumps(ret_answer))
+                else:
+                    ret_answer={"code":"0"}
+                    self.wfile.write(json.dumps(ret_answer))
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write("URL error...")
     #----------------------------------------------------------------------
     def do_PUT(self):
         """"""
@@ -99,8 +148,8 @@ def serverInit():
             pid=int(os.getpid())
             pf.write(str(pid))
             pf.close()
-            
             #start Http Service
+            mod_vm.mod_init()
             addr=('localhost',8001)
             server=HTTPServer(addr,RESTHandler)
             print "server is running..."
