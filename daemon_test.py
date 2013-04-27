@@ -1,12 +1,10 @@
-import urlparse
+import os,sys
 import libvirt
-import json
-#shutdownFlags(0) shutdown ASAP
+import mod_vm
+import mod_config
 
+mod_vm.mod_init()
 conn=libvirt.open("qemu:///system")
-#vm=conn.createLinux(mod_vm.config["Windows2k8"],0)
-#print vm.UUIDString()
-ss={"1":['1','2']}
-print ss
-del ss['1']
-print ss
+vmconfig=mod_config.setName(mod_vm.config["Windows2k8"],"testname hello")
+print vmconfig
+dom=conn.createLinux(vmconfig,0)

@@ -6,7 +6,7 @@ if __name__=="__main__":
     #vm instance id
     param["name"]="virtual machine name"
     param["template"]="123"
-    param["UUID"]="7f11f25f-8e95-20b6-a5e6-6e4ba2f3eef6"
+    param["UUID"]="34796fe3-e18e-5726-5b0a-a048a76783df"
     body=urllib.urlencode(param)
     #print body
     #

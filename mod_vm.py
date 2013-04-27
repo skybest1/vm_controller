@@ -7,7 +7,7 @@ import libvirt
 import os
 import json
 import time
-
+import mod_config
 #"ip":['uuid1','uuid2']
 vmpool={}
 #"uuid":"host ip"
@@ -16,21 +16,22 @@ vmmap={}
 vmstate=["none","Running","Blocked","Paused","ShutingDown","Shutoff","crashed","Suspended"]
 #name:xml config
 config={}
-#
+#module information
 mod_info={}
+#error log
+mod_log=open(os.getcwd()+"/error_log.log","a+")
 #----------------------------------------------------------------------
 #read xml config from file
 def mod_init():
     """"""
-    global config
-    fd=open("/home/achilles/docs/config/Windows2k8.xml","r")
-    lines=fd.readlines()
-    ss=""
-    for line in lines:
-        ss=ss+line
-    config["Windows2k8"]=ss
-    mod_info["time"]=time.ctime()
-    mod_info["PID"]=str(os.getpid())
+    try:
+        global config
+        config["Windows2k8"]=ss
+        mod_info["time"]=time.ctime()
+        mod_info["PID"]=str(os.getpid())
+        config=mod_config.getTemplate()
+    except Exception, e:
+        
 
 #----------------------------------------------------------------------
 #get the running info of the module
@@ -56,7 +57,8 @@ def createVM(name):
         ip="127.0.0.1"
         param="qemu+ssh://root@"+ip+"/system"
         conn=libvirt.open(param)
-        vm=conn.createLinux(config["Windows2k8"],0)
+        vmconfig=mod_config.setName(config['Windows2k8'],name)
+        vm=conn.createLinux(vmconfig,0)
         #add to list
         vmmap[vm.UUIDString()]=ip
         if(vmpool.has_key(ip)):

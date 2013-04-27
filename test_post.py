@@ -4,7 +4,7 @@ import urllib
 if __name__=="__main__":
     param={}
     #vm instance id
-    param["name"]="virtual machine name"
+    param["name"]="testname2"
     param["template"]="123"
     body=urllib.urlencode(param)
     #print body
