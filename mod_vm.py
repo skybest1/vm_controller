@@ -8,6 +8,7 @@ import os
 import json
 import time
 import mod_config
+import mod_monitor
 #"ip":['uuid1','uuid2']
 vmpool={}
 #"uuid":"host ip"
@@ -18,21 +19,30 @@ vmstate=["none","Running","Blocked","Paused","ShutingDown","Shutoff","crashed","
 config={}
 #module information
 mod_info={}
-#error log
-mod_log=open(os.getcwd()+"/error_log.log","a+")
+#error log:cannnot use mod_log=open(...) here!!!
+mod_log=1
+
 #----------------------------------------------------------------------
-#read xml config from file
+#module init
 def mod_init():
     """"""
     try:
-        global config
-        config["Windows2k8"]=ss
+        global config,mod_log,vmpool
+        mod_log=open("/home/achilles/workspace/PythonTest/log/modlog.log","a+")
         mod_info["time"]=time.ctime()
         mod_info["PID"]=str(os.getpid())
-        config=mod_config.getTemplate()
-    except Exception, e:
+        config["Windows2k8"]=mod_config.getTemplate()
         
-
+        ip_list=[]
+        mod_config.getIPAddress(ip_list)
+        #add host
+        for ip in ip_list:
+            vmpool[ip]=[]
+        mod_log.write(time.ctime()+" Info "+"module init OK!\n")
+        mod_log.flush()
+    except Exception, e:
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
 #----------------------------------------------------------------------
 #get the running info of the module
 def queryModInfo():
@@ -46,15 +56,18 @@ def queryModInfo():
             ret=ret+key+"<====>  "+str(vmpool[key])+"\n"
         return ret
     except Exception,e:
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return "query info error!%s" %e
 #----------------------------------------------------------------------
 #create vm on a host.
 def createVM(name):
     """"""
     try:
-        global vmmap,vmpool,config
+        global vmmap,vmpool,config,mod_log
         #should select a host ip!
-        ip="127.0.0.1"
+        ip=mod_monitor.selectHostIP(vmpool)
+        #ip="127.0.0.1"
         param="qemu+ssh://root@"+ip+"/system"
         conn=libvirt.open(param)
         vmconfig=mod_config.setName(config['Windows2k8'],name)
@@ -67,9 +80,13 @@ def createVM(name):
             vmpool[ip]=[]
             vmpool[ip].append(vm.UUIDString())
         conn.close()
+        #log
+        mod_log.write(time.ctime()+" Info "+"create vm on host:"+ip+"\n")
+        mod_log.flush()
         return vm.UUIDString()
     except Exception,e:
-        print "cannot connect to %s" %(ip)
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return None
 
 #----------------------------------------------------------------------
@@ -77,7 +94,7 @@ def createVM(name):
 def shutdownVM(uuid):
     """"""
     try:
-        global vmmap,vmpool
+        global vmmap,vmpool,mod_log
         param="qemu+ssh://root@"+vmmap[uuid]+"/system"
         conn=libvirt.open(param)
         vm=conn.lookupByUUIDString(uuid)
@@ -86,25 +103,31 @@ def shutdownVM(uuid):
         del vmmap[uuid]
         vmpool[host_ip].remove(uuid)
         conn.close()
+        mod_log.write(time.ctime()+" Info "+"vm:"+uuid+" shut down...\n")
+        mod_log.flush()
         return 1
     except Exception,e:
-        print "VM shutdown fail! %s" %e
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return 0
 #----------------------------------------------------------------------
 #suspend an inactive domain(cut CPU I/O resource),process frozen but memory stay allocated
 #vm state changed to 3(domain paused by user)
 def suspendVM(uuid):
     try:
-        global vmmap,vmpool
+        global vmmap,vmpool,mod_log
         param="qemu+ssh://root@"+vmmap[uuid]+"/system"
         conn=libvirt.open(param)
         vm=conn.lookupByUUIDString(uuid)
         print vm.UUIDString()
         vm.suspend()
         conn.close()
+        mod_log.write(time.ctime()+" Info "+"vm:"+uuid+" paused...\n")
+        mod_log.flush()
         return 1
     except Exception,e:
-        print "VM suspend fail! %s" %e
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return 0
 
 #----------------------------------------------------------------------
@@ -112,15 +135,18 @@ def suspendVM(uuid):
 def resumeVM(uuid):
     """"""
     try:
-        global vmmap,vmpool
+        global vmmap,vmpool,mod_log
         param="qemu+ssh://root@"+vmmap[uuid]+"/system"
         conn=libvirt.open(param)
         vm=conn.lookupByUUIDString(uuid)
         vm.resume()
         conn.close()
+        mod_log.write(time.ctime()+" Info "+"vm:"+uuid+" resumed...\n")
+        mod_log.flush()
         return 1
     except Exception,e:
-        print "VM resume fail! %s" %e
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return 0
 #----------------------------------------------------------------------
 #
@@ -134,7 +160,8 @@ def rebootVM(uuid):
         vm.reboot(0)
         return True
     except Exception,e:
-        print "VM reboot fail!%s" %e
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return False
     
 #----------------------------------------------------------------------
@@ -149,7 +176,8 @@ def destoryVM(uuid):
         vm.destory()
         return True
     except Exception,e:
-        print "VM destory fail!%s" %e
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return False
 #----------------------------------------------------------------------
 #
@@ -157,7 +185,7 @@ def queryVM(uuid,req_format):
     """"""
     ret_dict={}
     try:
-        global vmmap,vmpool,vmstate
+        global vmmap,vmpool,vmstate,mod_log
         url="qemu+ssh://root@"+vmmap[uuid]+"/system"
         conn=libvirt.open(url)
         vm=conn.lookupByUUIDString(uuid)
@@ -181,7 +209,8 @@ def queryVM(uuid,req_format):
             ret=ret+"Driver     : "+ret_dict["host"]["type"]+"\n"
             return ret
     except Exception,e:
-        error="VM query fail!%s" %e
+        mod_log.write(time.ctime()+" Error "+e+"\n")
+        mod_log.flush()
         return error
 #----------------------------------------------------------------------
 def getConfig():

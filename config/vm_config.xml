@@ -1,7 +1,5 @@
 <config>
 	<host>
-		<hostip>192.168.1.1</hostip>
-		<hostip></hostip>
-		<hostip>192.168.1.3</hostip>
+		<hostip>127.0.0.1</hostip>
 	</host>
 </config>
