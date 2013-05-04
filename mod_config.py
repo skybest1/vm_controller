@@ -10,18 +10,18 @@ def setName(xmlcofig,name):
     return str(doc.toxml())
 #----------------------------------------------------------------------
 #get cluster host ip address
-def getIPAddress(ips):
+def getIPAddress(path,ips):
     """"""
-    doc=xml.dom.minidom.parse("/home/achilles/workspace/PythonTest/config/vm_config.xml")
+    doc=xml.dom.minidom.parse(path+"/config/vm_config.xml")
     for node in doc.getElementsByTagName("hostip"):
         if node.hasChildNodes():
             ips.append(str(node.childNodes[0].nodeValue))
     return True
 
 #----------------------------------------------------------------------
-def getTemplate():
+def getTemplate(path):
     """"""
-    vmtemplate=open("/home/achilles/workspace/PythonTest/template/Windows2k8.xml").read()
+    vmtemplate=open(path+"/template/Windows2k8.xml").read()
     return vmtemplate
 
 if __name__=="__main__":

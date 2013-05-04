@@ -27,14 +27,14 @@ mod_log=1
 def mod_init():
     """"""
     try:
-        global config,mod_log,vmpool
-        mod_log=open("/home/achilles/workspace/PythonTest/log/modlog.log","a+")
+        global config,mod_log,vmpool,mod_info
+        
+        mod_log=open(mod_info['path']+"/log/modlog.log","a+")
         mod_info["time"]=time.ctime()
         mod_info["PID"]=str(os.getpid())
-        config["Windows2k8"]=mod_config.getTemplate()
-        
+        config["Windows2k8"]=mod_config.getTemplate(mod_info['path'])
         ip_list=[]
-        mod_config.getIPAddress(ip_list)
+        mod_config.getIPAddress(mod_info['path'],ip_list)
         #add host
         for ip in ip_list:
             vmpool[ip]=[]

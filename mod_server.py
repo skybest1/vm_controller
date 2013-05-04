@@ -131,6 +131,8 @@ class RESTHandler(BaseHTTPRequestHandler):
 #----------------------------------------------------------------------
 def serverInit():
     """"""
+    #get cwd
+    mod_vm.mod_info['path']=os.getcwd()
     context=daemon.DaemonContext()
     with context:
         if os.path.exists("/var/run/rendervmd.pid"):
